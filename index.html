@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ceas · panou de control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f3f5;--card:#fff;--ink:#16181d;--mut:#6b7280;--line:#e2e5ea;--acc:#0f766e;--accT:#fff;--field:#f6f7f9;--ok:#16a34a;--err:#dc2626;color-scheme:light}
+@media(prefers-color-scheme:dark){:root{--bg:#14161a;--card:#1d2026;--ink:#eceff4;--mut:#8f98a6;--line:#2c313a;--acc:#2dd4bf;--accT:#06231f;--field:#14161a;--ok:#4ade80;--err:#f87171;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 'Bricolage Grotesque',system-ui,sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 48px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+h1{font-size:1.5rem;margin:0}
+.st{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--mut)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--mut)}
+.dot.ok{background:var(--ok)}.dot.err{background:var(--err)}
+button,input,select{font:inherit;color:inherit}
+.ghost{background:none;border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.screen{background:#000;border-radius:14px;padding:18px 20px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-end;gap:16px;min-height:112px;border:6px solid #2a2e36}
+.screen b{font-size:2.6rem;line-height:1;font-weight:700;letter-spacing:.02em}
+.screen span{font-size:1rem;word-break:break-word}
+.leds{display:flex;gap:6px;align-items:center;font-size:.8rem;color:#9aa3b2}
+.led{width:14px;height:14px;border-radius:50%;background:#333;transition:.2s}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+h2{font-size:1.05rem;margin:0 0 12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.row:first-of-type{border-top:0}
+.row small{display:block;color:var(--mut);font-size:.8rem}
+.col{display:block;padding:9px 0;border-top:1px solid var(--line)}
+.col .top{display:flex;justify-content:space-between;margin-bottom:6px}
+.col small{color:var(--mut);font-size:.8rem;display:block;margin-top:4px}
+input[type=text],input[type=time]{width:100%;background:var(--field);border:1px solid var(--line);border-radius:8px;padding:9px 11px}
+input[type=time]{width:auto;font-size:1.3rem}
+input[type=range]{width:100%;accent-color:var(--acc)}
+input[type=color]{width:52px;height:36px;border:1px solid var(--line);border-radius:8px;background:none;padding:2px;cursor:pointer}
+.sw{position:relative;width:46px;height:26px;flex:none}
+.sw input{opacity:0;position:absolute;inset:0;margin:0;cursor:pointer;z-index:1}
+.sw i{position:absolute;inset:0;background:var(--line);border-radius:26px;transition:.15s}
+.sw i:after{content:"";position:absolute;left:3px;top:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.15s}
+.sw input:checked+i{background:var(--acc)}
+.sw input:checked+i:after{transform:translateX(20px)}
+.sw input:focus-visible+i,button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;border:1px solid var(--line);background:var(--field);border-radius:8px;padding:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.seg button i{width:12px;height:12px;border-radius:50%}
+.seg button.on{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);padding:20px;width:min(440px,92vw)}
+dialog::backdrop{background:#0008}
+dialog label{display:block;margin:10px 0 4px;font-size:.9rem}
+dialog .act{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+.pri{background:var(--acc);color:var(--accT);border:0;border-radius:8px;padding:8px 16px;cursor:pointer;font-weight:600}
+#msg{color:var(--err);font-size:.85rem;margin:0 0 12px;min-height:1em}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Ceasul meu</h1>
+  <div class="st"><span class="dot" id="dot"></span><span id="stx">Se conectează…</span><button class="ghost" id="cfgBtn">Conexiune</button></div>
+</header>
+<p id="msg"></p>
+
+<div class="screen" aria-label="Previzualizare afișaj">
+  <div><b id="pvTime">--:--</b><br><span id="pvText">…</span></div>
+  <div class="leds">LED <span class="led" id="pvLed"></span></div>
+</div>
+
+<div class="grid">
+  <section>
+    <h2>Afișaj</h2>
+    <div class="col"><div class="top"><span>Mesaj</span></div>
+      <input type="text" id="text" maxlength="80" data-k="text" data-t="str">
+    </div>
+    <div class="row"><span>Culoare text<small>Se trimite în formatul ceasului (RGB565)</small></span>
+      <input type="color" id="color"></div>
+  </section>
+
+  <section>
+    <h2>Alarmă</h2>
+    <div class="row"><span>Alarmă pornită</span>
+      <label class="sw"><input type="checkbox" data-k="alarmEnabled" data-t="bool"><i></i></label></div>
+    <div class="row"><span>Ora alarmei</span><input type="time" id="alarmTime"></div>
+    <div class="col"><div class="top"><span>Frecvența sunetului</span><output></output></div>
+      <input type="range" min="200" max="5000" step="50" data-k="alarmFreq" data-t="num" data-u=" Hz"></div>
+  </section>
+
+  <section>
+    <h2>LED-uri</h2>
+    <div class="row"><span>Mereu aprinse<small>Oprit = decide senzorul de lumină</small></span>
+      <label class="sw"><input type="checkbox" data-k="ledMasterSw" data-t="bool"><i></i></label></div>
+    <div class="row"><span>Mod automat<small>Aprinde la întuneric</small></span>
+      <label class="sw"><input type="checkbox" data-k="ledAutoLight" data-t="bool"><i></i></label></div>
+    <div class="col"><div class="top"><span>Culoare</span></div>
+      <div class="seg" id="ledColor">
+        <button data-v="0"><i style="background:#ef4444"></i>Roșu</button>
+        <button data-v="1"><i style="background:#3b82f6"></i>Albastru</button>
+        <button data-v="2"><i style="background:#22c55e"></i>Verde</button>
+      </div></div>
+  </section>
+
+  <section>
+    <h2>Senzor de lumină</h2>
+    <div class="col"><div class="top"><span>Prag de întuneric</span><output></output></div>
+      <input type="range" min="1" max="200" data-k="lightThreshold" data-t="num">
+      <small>LED-urile se aprind când citirea scade sub ~75% din prag.</small></div>
+    <div class="col"><div class="top"><span>Verificare cu LED-uri aprinse</span><output></output></div>
+      <input type="range" min="3" max="600" data-k="ledCheckInterval" data-t="num" data-u=" s">
+      <small>Mai rar = LED-urile clipesc mai rar, dar reacționează mai încet la lumină.</small></div>
+  </section>
+</div>
+</main>
+
+<dialog id="dlg">
+  <h2>Conexiune Firebase</h2>
+  <label for="cfgUrl">Adresa bazei de date</label>
+  <input type="text" id="cfgUrl">
+  <label for="cfgSec">Secret / token (opțional)</label>
+  <input type="text" id="cfgSec" placeholder="Doar dacă regulile bazei cer autentificare">
+  <div class="act"><button class="ghost" id="cfgCancel">Anulează</button><button class="pri" id="cfgSave">Salvează</button></div>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const DEF={url:'https://esp32-display-control-default-rtdb.europe-west1.firebasedatabase.app',secret:''};
+let cfg=DEF; try{cfg={...DEF,...JSON.parse(localStorage.getItem('ceasCfg')||'{}')}}catch(e){}
+let data={}, local={};
+
+const endpoint=()=>cfg.url.replace(/\/$/,'')+'/device/display1.json'+(cfg.secret?'?auth='+encodeURIComponent(cfg.secret):'');
+function status(ok,t){$('#dot').className='dot '+(ok?'ok':'err');$('#stx').textContent=t}
+
+async function load(){
+  try{
+    const r=await fetch(endpoint());
+    if(!r.ok) throw new Error(r.status===401?'Acces refuzat. Adaugă secretul în „Conexiune”.':'Eroare '+r.status);
+    data=(await r.json())||{};
+    $('#msg').textContent='';
+    status(true,'Conectat · '+new Date().toLocaleTimeString('ro-RO'));
+    render();
+  }catch(e){status(false,'Offline');$('#msg').textContent=e.message==='Failed to fetch'?'Nu mă pot conecta. Verifică internetul și adresa bazei de date.':e.message}
+}
+async function send(obj){
+  Object.keys(obj).forEach(k=>{local[k]=Date.now();data[k]=obj[k]});
+  render();
+  try{
+    const r=await fetch(endpoint(),{method:'PATCH',body:JSON.stringify({...obj,lastUpdate:new Date().toISOString()})});
+    if(!r.ok) throw new Error(r.status===401?'Scrierea a fost refuzată. Adaugă secretul în „Conexiune”.':'Eroare '+r.status);
+    $('#msg').textContent='';status(true,'Salvat · '+new Date().toLocaleTimeString('ro-RO'));
+  }catch(e){status(false,'Nesalvat');$('#msg').textContent=e.message}
+}
+const fresh=k=>Date.now()-(local[k]||0)>6000;
+
+// culoare RGB565 <-> #rrggbb
+const to565=h=>{const n=parseInt(h.slice(1),16),r=n>>16,g=(n>>8)&255,b=n&255;return '0x'+(((r>>3)<<11)|((g>>2)<<5)|(b>>3)).toString(16).padStart(4,'0')};
+const toHex=v=>{const n=parseInt(v,16)||0,c=x=>Math.round(x).toString(16).padStart(2,'0');return '#'+c(((n>>11)&31)*255/31)+c(((n>>5)&63)*255/63)+c((n&31)*255/31)};
+const LEDC=['#ef4444','#3b82f6','#22c55e'];
+
+function render(){
+  $$('[data-k]').forEach(el=>{
+    const k=el.dataset.k,v=data[k];
+    if(el.dataset.t==='bool'){el.checked=!!v}
+    else if(el.dataset.t==='num'){
+      if(v!=null&&fresh(k)&&document.activeElement!==el){if(+v>+el.max)el.max=v;el.value=v}
+      const o=el.closest('.col')?.querySelector('output');if(o)o.textContent=el.value+(el.dataset.u||'');
+    }else if(document.activeElement!==el&&fresh(k)&&v!=null){el.value=v}
+  });
+  if(data.color&&fresh('color'))$('#color').value=toHex(data.color);
+  if(data.alarmH!=null&&fresh('alarmH')&&document.activeElement!==$('#alarmTime'))
+    $('#alarmTime').value=String(data.alarmH).padStart(2,'0')+':'+String(data.alarmM||0).padStart(2,'0');
+  $$('#ledColor button').forEach(b=>b.classList.toggle('on',+b.dataset.v===+data.ledColor));
+  $('#pvText').textContent=data.text||'';
+  const c=data.color?toHex(data.color):'#fff';
+  $('#pvText').style.color=c;$('#pvTime').style.color=c;
+  const on=data.ledMasterSw;
+  $('#pvLed').style.background=on?LEDC[+data.ledColor||0]:(data.ledAutoLight?'#555':'#333');
+  $('#pvLed').title=on?'Aprinse permanent':(data.ledAutoLight?'Automat':'Stinse');
+}
+function clock(){const d=new Date();$('#pvTime').textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+
+// evenimente
+let timers={};
+const debounced=(k,fn,ms=500)=>{clearTimeout(timers[k]);timers[k]=setTimeout(fn,ms)};
+$$('[data-k]').forEach(el=>{
+  const k=el.dataset.k,t=el.dataset.t;
+  if(t==='bool') el.addEventListener('change',()=>send({[k]:el.checked}));
+  else el.addEventListener('input',()=>{
+    const v=t==='num'?Number(el.value):el.value;
+    local[k]=Date.now();data[k]=v;
+    const o=el.closest('.col')?.querySelector('output');if(o)o.textContent=el.value+(el.dataset.u||'');
+    debounced(k,()=>send({[k]:v}));
+  });
+});
+$('#color').addEventListener('input',e=>{local.color=Date.now();debounced('color',()=>send({color:to565(e.target.value)}),300);$('#pvText').style.color=e.target.value;$('#pvTime').style.color=e.target.value});
+$('#alarmTime').addEventListener('change',e=>{const [h,m]=e.target.value.split(':').map(Number);if(!isNaN(h))send({alarmH:h,alarmM:m})});
+$$('#ledColor button').forEach(b=>b.addEventListener('click',()=>send({ledColor:+b.dataset.v})));
+
+// conexiune
+$('#cfgBtn').onclick=()=>{$('#cfgUrl').value=cfg.url;$('#cfgSec').value=cfg.secret;$('#dlg').showModal()};
+$('#cfgCancel').onclick=()=>$('#dlg').close();
+$('#cfgSave').onclick=()=>{cfg={url:$('#cfgUrl').value.trim()||DEF.url,secret:$('#cfgSec').value.trim()};
+  try{localStorage.setItem('ceasCfg',JSON.stringify(cfg))}catch(e){}
+  $('#dlg').close();load()};
+
+clock();setInterval(clock,10000);load();setInterval(load,5000);
+</script>
+</body>
+</html>
